@@ -1,28 +1,29 @@
+// SPDX-License-Identifier: MIT
 // An example of a consumer contract that relies on a subscription for funding.
 //   Then sends to cartesi rollups IInput
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.18;
 
-import '@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol';
-import '@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol';
-import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
-import '@cartesi/rollups/contracts/interfaces/IInput.sol';
+import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
+import "@cartesi/rollups/contracts/interfaces/IInput.sol";
 
 /**
  * Based on the VRF chainlink example https://docs.chain.link/docs/vrf/v2/subscription/examples/get-a-random-number/#create-and-deploy-a-vrf-v2-compatible-contract
  */
 
-/**
- * Request testnet LINK and ETH here: https://faucets.chain.link/
- * Find information on LINK Token Contracts and get the latest ETH and LINK faucets here: https://docs.chain.link/docs/link-token-contracts/
- */
-
-/**
- * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
- * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-
 contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
+    /**
+     * HARDCODED FOR GOERLI (https://docs.chain.link/vrf/v2/direct-funding/supported-networks/#goerli-testnet)
+     */
+    // Address Coordinator
+    address constant coordinator = 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D;
+
+    // The gas lane to use, which specifies the maximum gas price to bump to.
+    // For a list of available gas lanes on each network,
+    // see https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/#configurations
+    bytes32 constant keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
+
     event RequestSent(uint256 requestId, uint32 numWords);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
 
@@ -40,11 +41,6 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     // past requests Id.
     uint256[] public requestIds;
     uint256 public lastRequestId;
-
-    // The gas lane to use, which specifies the maximum gas price to bump to.
-    // For a list of available gas lanes on each network,
-    // see https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/#configurations
-    bytes32 keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
 
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
@@ -65,19 +61,22 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     address public inputContract = 0x0000000000000000000000000000000000000000;
 
     /**
-     * HARDCODED FOR GOERLI
-     * COORDINATOR: 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D
+     * Chaninlink instructions
+     *   - Get some LINK and ETH (goerli faucet faucets.chain.link and https://goerlifaucet.com/
+     *  For subscription method
+     *   - Create a subscription, add funds to https://vrf.chain.link/ and get the subscriptionID 
+     *   - Deploy the contract with the subscriptionId
+     *   - Add the contract address as the consumer at https://vrf.chain.link/
+     *   - Interact with the contract to requestRandomWords 
      */
-    constructor(uint64 subscriptionId)
-        VRFConsumerBaseV2(0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D)
-        ConfirmedOwner(msg.sender)
-    {
-        COORDINATOR = VRFCoordinatorV2Interface(0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D);
+     
+    constructor(uint64 subscriptionId) VRFConsumerBaseV2(coordinator) ConfirmedOwner(msg.sender) {
+        COORDINATOR = VRFCoordinatorV2Interface(coordinator);
         s_subscriptionId = subscriptionId;
     }
 
     // Assumes the subscription is funded sufficiently.
-    function requestRandomWords() external onlyOwner returns (uint256 requestId) {
+    function requestRandomWords() external returns (uint256 requestId) {
         // Will revert if subscription is not set and funded.
         requestId = COORDINATOR.requestRandomWords(
             keyHash,
@@ -94,7 +93,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     }
 
     function fulfillRandomWords(uint256 _requestId, uint256[] memory _randomWords) internal override {
-        require(s_requests[_requestId].exists, 'request not found');
+        require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
         if (inputContract != 0x0000000000000000000000000000000000000000) {
@@ -106,7 +105,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     }
 
     function getRequestStatus(uint256 _requestId) external view returns (bool fulfilled, uint256[] memory randomWords) {
-        require(s_requests[_requestId].exists, 'request not found');
+        require(s_requests[_requestId].exists, "request not found");
         RequestStatus memory request = s_requests[_requestId];
         return (request.fulfilled, request.randomWords);
     }
@@ -115,6 +114,5 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     function setInputContract(address _newInputContractAddress) external onlyOwner {
         inputContract = _newInputContractAddress;
     }
-
 
 }
