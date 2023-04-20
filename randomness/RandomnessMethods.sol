@@ -106,7 +106,8 @@ contract RandomnessMethods is ConfirmedOwner {
     /// block has been reached.
     function sendCommitedFutureRandao() external returns (uint256) {
         uint256 randomnessBlock = revealBlock[msg.sender];
-        require(block.number > randomnessBlock, "Request not ready");
+        // wait a least 4 epochs + epson (4*32 blocks + e)
+        require(block.number > randomnessBlock + 128 + 3, "Request not ready");
         uint256 randao = block.prevrandao;
         if (inputContract != 0x0000000000000000000000000000000000000000) {
             IInput(inputContract).addInput(abi.encodePacked(randao));
