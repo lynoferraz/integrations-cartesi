@@ -58,7 +58,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
     uint32 numWords = 1;
 
     // contract to send vrf
-    address public inputContract = 0x0000000000000000000000000000000000000000;
+    address public inputContract = address(0);
 
     /**
      * Chaninlink instructions
@@ -96,7 +96,7 @@ contract VRFv2Consumer is VRFConsumerBaseV2, ConfirmedOwner {
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             // string memory hexString = string.concat("{\"lotery\":",request.randomWords,"}");
             // bytes32 memory dataInBytes32 = bytes32(bytes(hexString));
             IInput(inputContract).addInput(abi.encodePacked(_randomWords));

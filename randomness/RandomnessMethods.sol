@@ -8,7 +8,7 @@ import "@cartesi/rollups/contracts/interfaces/IInput.sol";
 
 contract RandomnessMethods is ConfirmedOwner {
     // contract to send randomness
-    address public inputContract = 0x0000000000000000000000000000000000000000;
+    address public inputContract = address(0);
 
     // commit to future block hash
     mapping(address => uint256) public revealBlock;
@@ -41,8 +41,8 @@ contract RandomnessMethods is ConfirmedOwner {
     /// send timestamp
     function sendTimestamp() external returns (uint256) { 
         // no access to current block hash (available only when mined)
-        uint256 bhash = uint256(blockhash(block.timestamp));
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        uint256 bhash = uint256(block.timestamp);
+        if (inputContract != address(0)) {
             IInput(inputContract).addInput(abi.encodePacked(bhash));
         }
         return bhash;
@@ -52,7 +52,7 @@ contract RandomnessMethods is ConfirmedOwner {
     function sendBlockhash() external returns (uint256) { 
         // no access to current block hash (available only when mined)
         uint256 bhash = uint256(blockhash(block.number - 1));
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             IInput(inputContract).addInput(abi.encodePacked(bhash));
         }
         return bhash;
@@ -84,7 +84,7 @@ contract RandomnessMethods is ConfirmedOwner {
         require(block.number > randomnessBlock, "Request not ready");
         require(block.number <= randomnessBlock + 256, "Request expired");
         uint256 bhash = uint256(blockhash(randomnessBlock));
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             IInput(inputContract).addInput(abi.encodePacked(bhash));
         }
         // reset reveal block
@@ -94,7 +94,7 @@ contract RandomnessMethods is ConfirmedOwner {
 
     // Send randao value
     function sendRandao() external returns (uint256) { 
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             // string memory hexString = string.concat("{\"lotery\":",request.randomWords,"}");
             // bytes32 memory dataInBytes32 = bytes32(bytes(hexString));
             IInput(inputContract).addInput(abi.encodePacked(block.prevrandao));
@@ -109,7 +109,7 @@ contract RandomnessMethods is ConfirmedOwner {
         // wait a least 4 epochs + epson (4*32 blocks + e)
         require(block.number > randomnessBlock + 128 + 3, "Request not ready");
         uint256 randao = block.prevrandao;
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             IInput(inputContract).addInput(abi.encodePacked(randao));
         }
         // reset reveal block
@@ -120,7 +120,7 @@ contract RandomnessMethods is ConfirmedOwner {
     // Send input mixed with randao value
     function sendAggregatedInputsMixedWithRandao(uint256 _input) external returns (uint256) { 
         uint256 randomness = uint256(keccak256(abi.encodePacked(block.prevrandao^aggregatedInputs)));
-        if (inputContract != 0x0000000000000000000000000000000000000000) {
+        if (inputContract != address(0)) {
             // string memory hexString = string.concat("{\"lotery\":",request.randomWords,"}");
             // bytes32 memory dataInBytes32 = bytes32(bytes(hexString));
             IInput(inputContract).addInput(abi.encodePacked(randomness));
